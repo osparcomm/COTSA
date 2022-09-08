@@ -1775,7 +1775,7 @@ ctsm.check2 <- function(data, action, message, fileName, merge.stations = TRUE) 
 
 
 ctsm_import_value <- function(data, station.dictionary, compartment, purpose, print_code_warnings) {
-
+  
   # order data and select variables of interest
 
   order.names = c(
