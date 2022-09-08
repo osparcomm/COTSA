@@ -1123,6 +1123,128 @@ convert.units <- function(conc, from, to, determinand) {
 }
 
 
+wk.convert.units <- function(conc, from, to, determinand) {
+  
+  data <- data.frame(conc, from, to)
+  if (!missing(determinand)) data$determinand <- determinand
+  
+  
+  #Create data frame with the units that are different (are not equal)
+  convert <- with(data, as.character(from) != as.character(to))
+  
+  out <- conc
+  out[convert] <- do.call("convert.units.engine", as.list(data[convert,]))
+  
+  out
+}
+
+convert.units.engine <- function(conc, from, to, determinand) {
+  
+  #Hack that deals with oregano metals (to be re-distributed at a later date)
+  is.organoMetal <- from %in% c("ug sn/kg", "gm/g", "ug sn/l")
+  if (any(is.organoMetal))
+  {
+    if (missing(determinand)) 
+      stop('Organo-metal units provided without determinand identification in convert.units')
+    
+    conversion <- determinand[is.organoMetal, drop = TRUE]
+    levels(conversion) = list("1.96" = "DBTIN", "1.48" = "MBTIN", "2.44" = "TBTIN", 
+                              "2.95" = "TPTIN", "1.65" = "MPTIN", "2.30" = "DPTIN")
+    conversion <- as.numeric(as.character(conversion))
+    if (any(is.na(conversion))) stop('Unrecognised organo-metal in convert.units')
+    
+    from <- as.character(from)    # just so that can add levels easily
+    from[from %in% "ug sn/kg"] <- "ug/kg"
+    from[from %in% "gm/g"] <- "g/g"
+    from[from %in% "ug sn/l"] <- "ug/l"
+    conc[is.organoMetal] <- conc[is.organoMetal] * conversion
+  }
+  
+  
+  #unitCheck function
+  #looks at the units in the data compared to what is required for the assessment
+  #includes: which units need to be converted and by how much, and
+  #checks for units that aren't in the assessment
+  unitCheck <- function(units) {
+    
+    #Create character vector with all the units used in the assessment 
+    ok.levels <- c(
+      "km", "m", "cm", "mm",
+      "kg", "g", "mg", 
+      "l", "ml", "%",
+      "g/l", "mg/ml", "mg/l", "ug/ml", "ug/l",  "ng/ml", "ng/l", "pg/l",
+      "g/g", "mg/mg", "ug/ug", "ng/ng", "pg/pg", "mg/g", "ug/g", "ng/g", "pg/g", "g/kg", 
+      "mg/kg", "ug/kg", "ng/kg", "pg/kg", 
+      "TEQ ug/kg", "TEQ pg/g",
+      "umol/min/mg protein", "nmol/min/mg protein", "pmol/min/mg protein")                     
+    
+    #Check all units in the data are in assessment vector 
+    ok <- units %in% c(ok.levels, NA)
+    
+    #Throw an error if any units are in the data but not used in assessment
+    if (any(!ok)) stop('Unrecognised units in data: ', paste(unique(units[!ok]), collapse = ", "))
+    
+    #Turn all units to factor 
+    convertByGrp <- factor(units, levels = ok.levels)
+    
+    #Split units by levels.  The different levels correspond to a number to the power of 10
+    #that the units will be multiplied by to get the concentration values 
+    levels(convertByGrp) <- list(
+      "-3" = c("km", "kg"),
+      "0" = c("kg/l", "g/ml",  "kg/kg", "g/g", "mg/mg", "ug/ug", "ng/ng", "pg/pg", "m", "g", "l"),  
+      "2" = c("%", "cm"), 
+      "3" = c("g/l", "mg/ml", "mg/g", "g/kg", "mm", "mg", "ml"), 
+      "6" = c("mg/l", "ug/ml", "ug/g", "mg/kg", "umol/min/mg protein"), 
+      "9" = c("ug/l",  "ng/ml", "ng/g", "ug/kg", "TEQ ug/kg", "nmol/min/mg protein"), 
+      "12" = c("ng/l", "pg/g", "ng/kg", "TEQ pg/g", "pmol/min/mg protein"), 
+      "15" = c("pg/l", "pg/kg"))
+    
+    #Turn 'convertByGrp' to character and then to numeric for calculation later on 
+    convertByGrp <- as.numeric(as.character(convertByGrp))
+    
+    
+    
+    #Put the different unit measurements into groups
+    grpLevels <- list(
+      "length" = c("km", "m", "cm", "mm"), 
+      "weight" = c("kg", "g", "mg"), 
+      "volume" = c("l", "ml"), 
+      "percentage" = "%", 
+      "w/v" = c("g/l", "mg/ml", "ug/l", "mg/l",  "ug/ml", "ng/ml", "ng/l", "pg/l"), 
+      "w/w" = c("g/g", "mg/mg", "ug/ug", "ng/ng", "pg/pg", "mg/g", "ug/g", "ng/g", "pg/g", "g/kg", 
+                "mg/kg", "ug/kg", "ng/kg", "pg/kg", "TEQ ug/kg", "TEQ pg/g"),
+      "mol/w" = c("umol/min/mg protein", "nmol/min/mg protein", "pmol/min/mg protein"))
+    
+    
+    #Create data set for units
+    unitGrp <- factor(units, levels = ok.levels)
+    
+    
+    levels(unitGrp) <- grpLevels
+    
+    #Create data frame of unitGrp and convertByGrp results
+    data.frame(unitGrp, convertByGrp)
+    
+  }
+  
+  
+  to.x <- unitCheck(to)
+  from.x <- unitCheck(from)
+  
+  
+  #If from.x to be converted is not in the same group as to.x; or from.x is now not in 
+  #percentage group of to.x then throw an error
+  rowid <- !(from.x$unitGrp == to.x$unitGrp | 
+               (from.x$unitGrp %in% "w/w" & to.x$unitGrp %in% "percentage") |  
+               (from.x$unitGrp %in% "percentage" & to.x$unitGrp %in% "w/w"))
+  if(any(rowid)) stop('Unrecognised conversian of units in data')
+  
+  
+  #Conversian of values to corresponding concentration
+  conc * 10^(to.x$convertByGrp - from.x$convertByGrp)
+}
+
+
 
 # Basis and matrix information and basis conversion ----
 
