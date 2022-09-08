@@ -1,4 +1,4 @@
-#### Edit history ####
+# Edit history ----
 
 # 17/11/2014 get.index.biota... transformation now derived from info.determinand file
 # 17/11/2014 ctsm.anyyear high or low = good.status now derived from info.determinand file
@@ -51,7 +51,7 @@
 # get.index.biota.Effects - major revision to deal with new distributions
 
 
-#### Set up functions #### 
+# Set up functions ----
 
 ctsm.assessment.setup <- function(ctsm.ob, AC = NULL, recent.trend = 20) {
   
@@ -258,7 +258,7 @@ ctsm.assessment <- function(
 
 
 
-#### Annual indices ####
+# Annual indices ----
 
 get.index <- function(compartment, determinand, data) {
   group <- get.info("determinand", determinand, "group", compartment)
@@ -401,7 +401,7 @@ get.index.water.Dioxins <- get.index.default
 get.index.water.Pesticides <- get.index.default
 
 
-#### Mixed model assessment functions ####
+# Mixed model assessment functions ----
 
 ctsm.anyyear.lmm <- function(data, annualIndex, AC, recent.years, determinand, max.year, 
                              recent.trend = 20, choose_model, ...) {
