@@ -37,7 +37,7 @@
 
 # Species and determinand information and uncertainty estimates ----
 
-info.path <- sub("functions", "information", function.path)
+info.path <- sub("functions", "information", function_path)
 info.file <- function(file.name) file.path(info.path, file.name)
 
 info.species <- read.csv(
@@ -1386,7 +1386,10 @@ info.pivotValues <- read.csv(info.file("pivot values.csv"), na.strings = "")
 
 # Html ----
 
-info.html <- read.csv(info.file("HTMLtranslate.csv"))
+# something has changed with this - need to investigate
+# but there are better replacement functions anyway
+
+# info.html <- read.csv(info.file("HTMLtranslate.csv"))
 
 
 # Imposex ----
