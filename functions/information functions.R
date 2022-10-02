@@ -42,7 +42,10 @@ info.file <- function(file.name) file.path(info.path, file.name)
 
 info.species <- read.csv(
     info.file(info_species_file_id), 
-    row.names = "species", as.is = c("common.name"), na.strings = "", check.names = FALSE)
+    row.names = "species", 
+    na.strings = "", 
+    check.names = FALSE
+)
 
 
 
