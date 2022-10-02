@@ -207,7 +207,7 @@ read.assessment.criteria <- function(infile)  {
   list(sediment = sediment, biota = biota, water = water)
 }
 
-info.assessment.criteria <- read.assessment.criteria()
+info.assessment.criteria <- read.assessment.criteria(info_AC_infile)
 rm(read.assessment.criteria)
 
 # gets Assessment Criteria
