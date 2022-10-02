@@ -3861,7 +3861,7 @@ ctsm_normalise_biota_HELCOM <- function(data, QA, station_dictionary, control) {
   # method supplied by control
   
   ctsm_normalise_default <- list(
-    lipid = list(method = "simple", normaliser = "LIPIDWT%", value = 5), 
+    lipid = list(method = "simple", value = 5), 
     other = list(method = "none"), 
     exclude = NULL
   )
@@ -3932,69 +3932,13 @@ ctsm_normalise_biota_HELCOM <- function(data, QA, station_dictionary, control) {
       }
       
       
-      # extract normaliser and print summary information
+      # normalise to a specified value of lipid content
+      # data are already on a lipid basis (i.e. 100% lipid)
       
-      normaliser <- control$normaliser
-      
-      if (! normaliser %in% names(data)) {
-        stop("Normaliser ", normaliser, " not found in data")
-      }
-      
-      switch(
-        control$method,
-        simple = {
-          unit <- get.info("determinand", normaliser, "unit", "biota")
-          message("   Normalising ", group, " to ", control$value, unit, " ", normaliser)
-        }
-      )
-      
-      
-      # function to get normaliser variables
-      
-      getNdata <- function(x) {
-        id <- paste(normaliser, x, sep = ".")
-        data[[id]]
-      }      
-      
-      
-      # get concentration and normaliser 
-      
-      Cm <- data$concentration
-      Nm <- data[[normaliser]]
-      
-      var_Cm <- data$uncertainty ^ 2
-      var_Nm <- 0 
-      
-      
-      # get pivot values
-      
-      if (control$method == "simple") {
-        Cx <- 0
-        Nx <- 0
-        Nss <- control$value
-      }    
-      
+      message("   Normalising ", group, " to ", control$value, "%")
 
-      # normalise concentrations and put back into standard variables
-      
-      out <- ctsm_normalise_calculate(Cm, Nm, Nss, var_Cm, var_Nm, Cx, Nx)
-      
-      concentration <- out$Css 
-      uncertainty <- sqrt(out$var_Css)
-      
-      
-      # check no normalisers are less-thans; 
-      # if so, normalised concentration should be a greater than, but
-      # haven't coded this yet
-      
-      notOK <- getNdata("qflag") %in% c("<", "D", "Q")
-      if (any(notOK)) {
-        message('   Removing biota data where normaliser is a less than')
-        concentration[notOK] <- NA
-      }
-      
-      data$concentration <- concentration
-      data$uncertainty <- uncertainty
+      data$concentration <- data$concentration * control$value / 100
+      data$uncertainty <- data$uncertainty * control$value / 100
       
       data
     })
