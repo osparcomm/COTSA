@@ -826,10 +826,15 @@ ctsm_create_timeSeries <- function(
 
 
   # retains determinands of interest, including auxiliary determinands and those
-  # required by determinands.control$variables checks all determinands of interest are
-  # recognised by info.determinand
+  # required by determinands.control$variables 
+  # checks all determinands of interest are recognised by info.determinand
 
-  wk <- ctsm.check.determinands(info$compartment, data, determinands, determinands.control)
+  wk <- ctsm_check_determinands(
+    info$compartment, 
+    data, 
+    determinands, 
+    determinands.control
+  )
   
   data <- wk$data
   determinands <- wk$determinands
@@ -2729,7 +2734,7 @@ ctsm.get.auxiliary <- function(determinands, compartment) {
 }
 
 
-ctsm.check.determinands <- function(compartment, data, determinands, control = NULL) {
+ctsm_check_determinands <- function(compartment, data, determinands, control = NULL) {
 
   # checks all determinands are recognised in info files
   # checks determinands are not also in control (if they are to be replaced)
@@ -2737,15 +2742,19 @@ ctsm.check.determinands <- function(compartment, data, determinands, control = N
   
   # utility function to get all determinand names from control structure
   
-  get_control_dets <- function(control) {  
+  get_control_dets <- function(control, .names = TRUE) {  
     if (is.null(control)) 
       return(NULL)
-
-    out <- control %>% 
-      lapply("[[", "det") %>% 
-      unlist()
     
-    c(names(control), out)
+    out <- lapply(control, "[[", "det")
+    out <- unlist(out)
+    out <- unname(out)
+    
+    if (.names) {
+      return(c(names(control), out))
+    } else {
+      return(out)
+    }
   }
   
   
@@ -2789,7 +2798,7 @@ ctsm.check.determinands <- function(compartment, data, determinands, control = N
   auxiliary <- ctsm.get.auxiliary(determinands, compartment)
   
   if (!is.null(control)) {
-    ok <- names(control) %in% c(determinands, auxiliary)
+    ok <- names(control) %in% c(determinands, auxiliary, get_control_dets(control, .names = FALSE))
     
     if (!any(ok)) {
       control <- NULL
